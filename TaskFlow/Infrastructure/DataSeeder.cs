@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using TaskFlow.Entities;
+using TaskFlow.Enums;
 
 namespace TaskFlow.Infrastructure;
 
@@ -21,7 +22,7 @@ public class DataSeeder
                     Title = "Learn Entity Framework Core",
                     Description = "Study migrations, relationships and LINQ queries.",
                     IsCompleted = false,
-                    Priority = 1,
+                    Priority = TaskPriority.Medium,
                     CreatedAt = new DateTime(2026, 11, 10, 10, 0, 0, DateTimeKind.Utc),
                     DueDate = new DateTime(2026, 11, 15, 23, 59, 0, DateTimeKind.Utc)
                 },
@@ -31,7 +32,7 @@ public class DataSeeder
                     Title = "Complete TaskFlow API",
                     Description = "Implement CRUD operations for tasks.",
                     IsCompleted = false,
-                    Priority = 2,
+                    Priority = TaskPriority.Medium,
                     CreatedAt = new DateTime(2026, 11, 11, 12, 0, 0, DateTimeKind.Utc),
                     DueDate = new DateTime(2026, 11, 20, 23, 59, 0, DateTimeKind.Utc)
                 },
@@ -41,7 +42,7 @@ public class DataSeeder
                     Title = "Read C# documentation",
                     Description = "Review async/await and dependency injection.",
                     IsCompleted = true,
-                    Priority = 3,
+                    Priority = TaskPriority.High,
                     CreatedAt = new DateTime(2026, 11, 12, 8, 0, 0, DateTimeKind.Utc),
                     DueDate = null
                 }
