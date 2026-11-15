@@ -1,8 +1,9 @@
+using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
-using TaskFlow.Entities;
 using TaskFlow.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using TaskFlow.DTOs.TodoTasks;
+using TaskFlow.Extensions;
 using TaskFlow.Mapping;
 
 namespace TaskFlow.Controllers;
@@ -11,7 +12,9 @@ namespace TaskFlow.Controllers;
 [Route("api/[controller]")]
 public class TasksController(
     TasksDbContext taskDbContext,
-    TodoTaskMapper mapper) : ControllerBase
+    TodoTaskMapper mapper,
+    IValidator<CreateTaskDto> createValidator,
+    IValidator<UpdateTaskDto> updateValidator) : ControllerBase
 {
     [HttpGet("{id:int}", Name = "GetById")]
     [ProducesResponseType(typeof(ReadTaskDto), statusCode: StatusCodes.Status200OK)]
@@ -30,15 +33,13 @@ public class TasksController(
         return Ok(mapper.ToReadDto(task));
     }
 
-
     [HttpGet]
     [ProducesResponseType(typeof(List<ReadTaskDto>), statusCode: StatusCodes.Status200OK)]
     public async Task<ActionResult<List<ReadTaskDto>>> GetAll()
     {
         var todoTasks = await taskDbContext.TodoTasks.ToListAsync();
 
-        var readDtos = todoTasks.
-            Select(mapper.ToReadDto)
+        var readDtos = todoTasks.Select(mapper.ToReadDto)
             .ToList();
 
         return Ok(readDtos);
@@ -49,34 +50,18 @@ public class TasksController(
     [ProducesResponseType(typeof(ProblemDetails), statusCode: StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<ReadTaskDto>> Create(CreateTaskDto createDto)
     {
-        if (string.IsNullOrWhiteSpace(createDto.Title))
+        var validationResult = await createValidator.ValidateAsync(createDto);
+
+        if (!validationResult.IsValid)
         {
-            return Problem(
-                detail: "A task title cannot be empty.",
-                statusCode: StatusCodes.Status400BadRequest);
-        }
-        
-        //Todo validation for DueDate
-        if (createDto.DueDate is not null && !(createDto.DueDate is DateTime))
-        {
-            return Problem(
-                detail: "A task due time is not UTC Date format.",
-                statusCode: StatusCodes.Status400BadRequest);
+            return validationResult.ToProblem();
         }
 
-        if (createDto.DueDate < DateTime.UtcNow)
-        {
-            return Problem(
-                detail: "A task due time is incorrect.",
-                statusCode: StatusCodes.Status400BadRequest);
-        }
-
-
-        var todoTask = mapper.ToEntities(createDto); 
+        var todoTask = mapper.ToEntities(createDto);
 
         taskDbContext.TodoTasks.Add(todoTask);
         await taskDbContext.SaveChangesAsync();
-        
+
         return CreatedAtRoute(
             nameof(GetById),
             new { todoTask.Id },
@@ -89,19 +74,11 @@ public class TasksController(
     [ProducesResponseType(typeof(ProblemDetails), statusCode: StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ReadTaskDto>> Update(int id, UpdateTaskDto updateDto)
     {
-        if (string.IsNullOrWhiteSpace(updateDto.Title))
-        {
-            return Problem(
-                detail: "A task title cannot be empty.",
-                statusCode: StatusCodes.Status400BadRequest);
-        }
+        var validationResult = await updateValidator.ValidateAsync(updateDto);
 
-        if (updateDto.DueDate is DateTime dateTime &&
-            dateTime < DateTime.UtcNow)
+        if (!validationResult.IsValid)
         {
-            return Problem(
-                detail: "A task due time is inccorrect",
-                statusCode: StatusCodes.Status400BadRequest);
+            return validationResult.ToProblem();
         }
 
         var existingTask = await taskDbContext.TodoTasks.FindAsync(id);
@@ -116,7 +93,7 @@ public class TasksController(
         mapper.UpdateEntity(updateDto, existingTask);
 
         await taskDbContext.SaveChangesAsync();
-        
+
         return Ok(mapper.ToReadDto(existingTask));
     }
 
@@ -139,8 +116,7 @@ public class TasksController(
 
         return NoContent();
     }
-
-
+    
     [HttpDelete("{id:int}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), statusCode: StatusCodes.Status404NotFound)]
