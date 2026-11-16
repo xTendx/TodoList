@@ -4,6 +4,7 @@ using TaskFlow.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using TaskFlow.DTOs.TodoTasks;
 using TaskFlow.Extensions;
+using TaskFlow.Filters;
 using TaskFlow.Mapping;
 
 namespace TaskFlow.Controllers;
@@ -12,9 +13,7 @@ namespace TaskFlow.Controllers;
 [Route("api/[controller]")]
 public class TasksController(
     TasksDbContext taskDbContext,
-    TodoTaskMapper mapper,
-    IValidator<CreateTaskDto> createValidator,
-    IValidator<UpdateTaskDto> updateValidator) : ControllerBase
+    TodoTaskMapper mapper) : ControllerBase
 {
     [HttpGet("{id:int}", Name = "GetById")]
     [ProducesResponseType(typeof(ReadTaskDto), statusCode: StatusCodes.Status200OK)]
@@ -46,17 +45,11 @@ public class TasksController(
     }
 
     [HttpPost]
+    [ServiceFilter(typeof(ValidationFilters<CreateTaskDto>))]
     [ProducesResponseType(typeof(ReadTaskDto), statusCode: StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), statusCode: StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<ReadTaskDto>> Create(CreateTaskDto createDto)
     {
-        var validationResult = await createValidator.ValidateAsync(createDto);
-
-        if (!validationResult.IsValid)
-        {
-            return validationResult.ToProblem();
-        }
-
         var todoTask = mapper.ToEntities(createDto);
 
         taskDbContext.TodoTasks.Add(todoTask);
@@ -69,18 +62,12 @@ public class TasksController(
     }
 
     [HttpPut("{id:int}")]
+    [ServiceFilter(typeof(ValidationFilters<UpdateTaskDto>))]
     [ProducesResponseType(typeof(ReadTaskDto), statusCode: StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), statusCode: StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), statusCode: StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ReadTaskDto>> Update(int id, UpdateTaskDto updateDto)
     {
-        var validationResult = await updateValidator.ValidateAsync(updateDto);
-
-        if (!validationResult.IsValid)
-        {
-            return validationResult.ToProblem();
-        }
-
         var existingTask = await taskDbContext.TodoTasks.FindAsync(id);
 
         if (existingTask is null)

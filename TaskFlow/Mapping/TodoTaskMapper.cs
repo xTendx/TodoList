@@ -19,5 +19,3 @@ public partial class TodoTaskMapper
     [MapperIgnoreTarget(nameof(TodoTask.CreatedAt))]
     public partial void UpdateEntity(UpdateTaskDto source, TodoTask target);
 }
-
-// (nameof(TodoTask.Id), (nameof(TodoTask.IsCompleted), (nameof(TodoTask.CreatedAt)

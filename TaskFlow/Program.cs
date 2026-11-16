@@ -2,6 +2,7 @@ using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 using TaskFlow.DTOs.TodoTasks;
+using TaskFlow.Filters;
 using TaskFlow.Infrastructure;
 using TaskFlow.Mapping;
 using TaskFlow.Validators.TodoTasks;
@@ -17,6 +18,8 @@ builder.Services.AddDbContext<TasksDbContext>(optionsBuilder =>
 builder.Services.AddScoped<TodoTaskMapper>();
 builder.Services.AddScoped<IValidator<CreateTaskDto>, CreateTodoTaskDtoValidator>();
 builder.Services.AddScoped<IValidator<UpdateTaskDto>, UpdateTodoTaskDtoValidator>();
+builder.Services.AddTransient(typeof(ValidationFilters<>));
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
