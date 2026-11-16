@@ -5,6 +5,7 @@ using TaskFlow.DTOs.TodoTasks;
 using TaskFlow.Filters;
 using TaskFlow.Infrastructure;
 using TaskFlow.Mapping;
+using TaskFlow.MiddleWare;
 using TaskFlow.Validators.TodoTasks;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -19,10 +20,15 @@ builder.Services.AddScoped<TodoTaskMapper>();
 builder.Services.AddScoped<IValidator<CreateTaskDto>, CreateTodoTaskDtoValidator>();
 builder.Services.AddScoped<IValidator<UpdateTaskDto>, UpdateTodoTaskDtoValidator>();
 builder.Services.AddTransient(typeof(ValidationFilters<>));
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
+app.UseExceptionHandler();
+app.UseHttpsRedirection();
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -30,8 +36,6 @@ if (app.Environment.IsDevelopment())
 
     await DataSeeder.SeedAsync(app.Services);
 }
-
-app.UseHttpsRedirection();
 
 app.MapControllers();
 
